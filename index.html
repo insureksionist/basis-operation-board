@@ -214,6 +214,25 @@
     align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border);
   }
   .row.head { font-size: 11px; color: var(--text-muted); padding-bottom: 8px; }
+  .bulk-form {
+    display:none; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px;
+    background: var(--panel-alt); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:14px;
+  }
+  .bulk-form.open { display:grid; }
+  .bulk-form label { font-size:11px; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .bulk-form input, .bulk-form select, .bulk-form textarea {
+    width:100%; font-family:inherit; font-size:13px; padding:7px 8px; box-sizing:border-box;
+    border:1px solid var(--border); border-radius:6px; background:var(--panel); color:var(--text);
+  }
+  .bulk-form textarea { min-height:54px; resize:vertical; }
+  .bulk-form .full { grid-column: 1 / -1; }
+  .bulk-checks { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; padding-top:4px; }
+  .bulk-check { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); }
+  .bulk-check input { width:auto; }
+  .bulk-preview { grid-column:1 / -1; font-size:11px; color:var(--text-muted); padding:8px 10px; border:1px dashed var(--border); border-radius:6px; }
+  .bulk-actions { grid-column:1 / -1; display:flex; gap:8px; justify-content:flex-end; }
+  @media (max-width: 900px) { .bulk-form { grid-template-columns:1fr 1fr; } }
+  @media (max-width: 560px) { .bulk-form { grid-template-columns:1fr; } .bulk-form .full { grid-column:auto; } .bulk-actions { grid-column:auto; } }
   @media (max-width: 700px) {
     .row { grid-template-columns: 22px 1fr 30px; }
     .row .col-detail, .row .col-prio, .row .col-date { display: none; }
@@ -326,9 +345,52 @@
       </div>
       <div class="section-head-actions">
         <input type="text" class="search-box" id="searchBox" placeholder="Cari aktivitas / PIC / priority / date / status...">
+        <button class="ghost" id="btnBulkToggle">+ Bulk Daily</button>
         <button class="primary" id="btnAddToggle">+ Add item</button>
       </div>
     </div>
+
+    <form class="bulk-form" id="bulkForm">
+      <div>
+        <label for="bTitle">Activity</label>
+        <input type="text" id="bTitle" required value="Daily Health Check">
+      </div>
+      <div>
+        <label for="bDetail">Detail / PIC</label>
+        <input type="text" id="bDetail" placeholder="mis. SAP Basis / nama PIC">
+      </div>
+      <div>
+        <label for="bPrio">Priority</label>
+        <select id="bPrio"><option value="-">-</option><option value="Tinggi">High</option><option value="Sedang">Medium</option><option value="Rendah" selected>Low</option></select>
+      </div>
+      <div>
+        <label for="bMode">Schedule</label>
+        <select id="bMode"><option value="daily">Every day</option><option value="weekday" selected>Weekdays (Mon–Fri)</option></select>
+      </div>
+      <div>
+        <label for="bStart">Start date</label>
+        <input type="date" id="bStart" required>
+      </div>
+      <div>
+        <label for="bEnd">End date</label>
+        <input type="date" id="bEnd" required>
+      </div>
+      <div class="full">
+        <label>Exclude dates / tanggal merah</label>
+        <textarea id="bSkip" placeholder="Masukkan tanggal yang ingin dikosongkan, satu per baris. Contoh:
+17/08/2026
+25/12/2026"></textarea>
+        <div class="bulk-checks">
+          <label class="bulk-check"><input type="checkbox" id="bSkipWeekends"> Skip weekends (Sabtu &amp; Minggu)</label>
+          <span style="font-size:11px;color:var(--text-muted);">Tanggal yang ditulis di atas akan dilewati dan tidak dibuat sebagai task.</span>
+        </div>
+      </div>
+      <div class="bulk-preview" id="bulkPreview">Pilih rentang tanggal untuk melihat jumlah task yang akan dibuat.</div>
+      <div class="bulk-actions">
+        <button type="button" class="ghost" id="btnBulkCancel">Cancel</button>
+        <button type="submit" class="primary">Create tasks</button>
+      </div>
+    </form>
 
     <form class="add-form" id="addForm">
       <div>
@@ -789,9 +851,77 @@
     document.getElementById("addForm").classList.remove("open");
   }
 
+  /* ---------- bulk daily task ---------- */
+  function parseSkipDates(text) {
+    var set = {};
+    (text || '').split(/[,\n;]+/).forEach(function(raw){
+      var v = raw.trim(); if (!v) return;
+      var iso = '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) iso = v;
+      else {
+        var m = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+        if (m) iso = m[3] + '-' + ('0'+m[2]).slice(-2) + '-' + ('0'+m[1]).slice(-2);
+      }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) set[iso] = true;
+    });
+    return set;
+  }
+  function bulkDates() {
+    var start = document.getElementById('bStart').value;
+    var end = document.getElementById('bEnd').value;
+    var mode = document.getElementById('bMode').value;
+    var skipWeekends = document.getElementById('bSkipWeekends').checked;
+    var skip = parseSkipDates(document.getElementById('bSkip').value);
+    if (!start || !end || start > end) return [];
+    var out = [], d = new Date(start + 'T12:00:00');
+    var last = new Date(end + 'T12:00:00');
+    while (d <= last) {
+      var iso = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+      var wd = d.getDay();
+      var weekend = wd === 0 || wd === 6;
+      if (!skip[iso] && !(mode === 'weekday' && weekend) && !(skipWeekends && weekend)) out.push(iso);
+      d.setDate(d.getDate()+1);
+    }
+    return out;
+  }
+  function updateBulkPreview() {
+    var dates = bulkDates();
+    var el = document.getElementById('bulkPreview');
+    if (!dates.length) { el.textContent = 'Belum ada tanggal yang akan dibuat. Periksa start/end date dan pilihan schedule.'; return; }
+    el.textContent = dates.length + ' task akan dibuat: ' + dates[0] + (dates.length > 1 ? ' s/d ' + dates[dates.length-1] : '') + '. Tanggal yang dikecualikan tidak akan dibuat.';
+  }
+  document.getElementById('btnBulkToggle').addEventListener('click', function(){
+    var f = document.getElementById('bulkForm');
+    f.classList.toggle('open');
+    document.getElementById('addForm').classList.remove('open');
+    if (f.classList.contains('open')) {
+      var today = todayISO;
+      document.getElementById('bStart').value = today;
+      var d = new Date(today + 'T12:00:00'); d.setDate(d.getDate()+6);
+      document.getElementById('bEnd').value = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+      updateBulkPreview(); document.getElementById('bTitle').focus();
+    }
+  });
+  ['bStart','bEnd','bMode','bSkip','bSkipWeekends'].forEach(function(id){ document.getElementById(id).addEventListener('input', updateBulkPreview); document.getElementById(id).addEventListener('change', updateBulkPreview); });
+  document.getElementById('btnBulkCancel').addEventListener('click', function(){ document.getElementById('bulkForm').classList.remove('open'); });
+  document.getElementById('bulkForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var dates = bulkDates();
+    if (!dates.length) { showToast('Tidak ada tanggal yang dipilih'); return; }
+    var title = document.getElementById('bTitle').value.trim();
+    if (!title) return;
+    var detail = document.getElementById('bDetail').value.trim();
+    var prio = document.getElementById('bPrio').value;
+    dates.forEach(function(date){ state.items.push({ id: uid(), category: 'daily', title: title, detail: detail, priority: prio, date: date, done: false }); });
+    saveCache(); populateYearSelect_keepSelection(); render();
+    document.getElementById('bulkForm').classList.remove('open');
+    showToast(dates.length + ' Daily Task berhasil dibuat');
+  });
+
   /* ---------- add form ---------- */
   document.getElementById("btnAddToggle").addEventListener("click", function(){
     document.getElementById("addForm").classList.toggle("open");
+    document.getElementById("bulkForm").classList.remove("open");
     if (document.getElementById("addForm").classList.contains("open")) {
       var period = getPeriod();
       var now = new Date();
