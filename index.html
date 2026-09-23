@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SAP Basis — Ops Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    --bg: #F4F5F7;
+    --panel: #FFFFFF;
+    --panel-alt: #EEF0F3;
+    --border: #DBDFE4;
+    --text: #171B21;
+    --text-muted: #5B6572;
+    --accent: #0E7C86;
+    --accent-soft: #DCEEEF;
+    --total-accent: #6B4FBB;
+    --total-soft: #EAE4F8;
+    --done: #2F855A;
+    --done-soft: #E1F3E8;
+    --pending: #B7791F;
+    --pending-soft: #FBF0DC;
+    --danger: #C53030;
+    --danger-soft: #FBE4E4;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151B;
+      --panel: #171E26;
+      --panel-alt: #1C242E;
+      --border: #2A3441;
+      --text: #E7ECF1;
+      --text-muted: #8D98A6;
+      --accent: #35C5BB;
+      --accent-soft: #17302F;
+      --total-accent: #A78BFA;
+      --total-soft: #241D3A;
+      --done: #4ADE80;
+      --done-soft: #16301F;
+      --pending: #FBBF24;
+      --pending-soft: #332608;
+      --danger: #F87171;
+      --danger-soft: #331515;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151B;
+    --panel: #171E26;
+    --panel-alt: #1C242E;
+    --border: #2A3441;
+    --text: #E7ECF1;
+    --text-muted: #8D98A6;
+    --accent: #35C5BB;
+    --accent-soft: #17302F;
+    --total-accent: #A78BFA;
+    --total-soft: #241D3A;
+    --done: #4ADE80;
+    --done-soft: #16301F;
+    --pending: #FBBF24;
+    --pending-soft: #332608;
+    --danger: #F87171;
+    --danger-soft: #331515;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { min-height: 100%; }
+  .mono { font-family: "IBM Plex Mono", "Courier New", monospace; }
+  a { color: var(--accent); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 20px 64px; }
+
+  /* ---------- header ---------- */
+  header.topbar {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 14px 0; margin-bottom: 16px;
+  }
+  .topbar-inner {
+    max-width: 1180px; margin: 0 auto; padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .brand { display: flex; flex-direction: column; gap: 2px; }
+  .brand .title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand .subtitle { font-size: 12.5px; color: var(--text-muted); }
+  .brand .subtitle span.dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:6px; vertical-align:1px; }
+
+  .topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  button, .btn {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--panel); color: var(--text);
+    padding: 8px 12px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible, .checkbox input:focus-visible + span {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { filter: brightness(1.06); }
+  button.ghost { background: transparent; }
+  button.icon { padding: 8px; width: 34px; height: 34px; justify-content: center; }
+  input[type="file"] { display: none; }
+
+  select {
+    font-family: inherit; font-size: 13px; padding: 7px 9px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text);
+  }
+
+  /* ---------- meta bar: today + period filter ---------- */
+  .meta-bar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .today-info { font-size: 13.5px; color: var(--text-muted); }
+  .today-info b { color: var(--text); font-weight: 600; }
+  .period-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .period-filter .pf-label { font-size: 12px; color: var(--text-muted); }
+
+  .data-source-note {
+    font-size: 11.5px; color: var(--text-muted); margin: -8px 0 18px; padding: 8px 12px;
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 7px;
+    display: none; align-items: center; gap: 8px;
+  }
+  .data-source-note.show { display: flex; }
+  .data-source-note.warn { border-color: var(--pending); color: var(--pending); background: var(--pending-soft); }
+  .data-source-note .dot-src { width: 6px; height: 6px; border-radius: 50%; background: var(--done); flex: none; }
+  .data-source-note.warn .dot-src { background: var(--pending); }
+
+  .data-source-note strong { color: var(--text); }
+  .data-source-note .source-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .source-btn { border: 1px solid var(--border); background: var(--panel); color: var(--text); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+  .source-btn:hover { border-color: var(--accent); }
+  .data-source-note.error { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
+  .data-source-note.error .dot-src { background: var(--danger); }
+
+  /* ---------- donut grid ---------- */
+  .donut-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 900px) { .donut-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .donut-grid { grid-template-columns: repeat(2, 1fr); } }
+  .donut-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .donut-card.total { border-color: var(--total-accent); }
+  .donut-card .dc-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center; }
+  .donut-card.total .dc-label { color: var(--total-accent); }
+  .donut-card .dc-count { font-size: 11px; color: var(--text-muted); font-family: "IBM Plex Mono", monospace; }
+
+  /* ---------- kpi strip ---------- */
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px;
+  }
+  @media (max-width: 620px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--panel-alt); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; }
+  .kpi .kpi-label { font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
+  .kpi .kpi-value { font-family: "IBM Plex Mono", monospace; font-size: 21px; font-weight: 600; }
+  .kpi.warn .kpi-value { color: var(--danger); }
+
+  /* ---------- tabs ---------- */
+  .tabbar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; overflow-x: auto; }
+  .tabbar button {
+    border: none; background: transparent; border-radius: 0; padding: 10px 14px; font-weight: 500;
+    color: var(--text-muted); border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .tabbar button:hover { color: var(--text); border-color: var(--border); }
+  .tabbar button.active { color: var(--text); border-color: var(--accent); }
+  .tabbar button .count { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text-muted); margin-left: 5px; }
+
+  .panel-section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 18px 6px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .section-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
+  .section-head .desc { font-size: 12.5px; color: var(--text-muted); }
+  .section-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .search-box {
+    font-family: inherit; font-size: 13px; padding: 7px 10px; min-width: 170px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--panel-alt); color: var(--text);
+  }
+
+  /* add form */
+  .add-form {
+    display: none; grid-template-columns: 2fr 1.3fr 1fr 1fr auto; gap: 8px;
+    background: var(--panel-alt); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 14px;
+  }
+  .add-form.open { display: grid; }
+  @media (max-width: 760px) { .add-form { grid-template-columns: 1fr 1fr; } }
+  .add-form label { font-size: 11px; color: var(--text-muted); display:block; margin-bottom: 3px; }
+  .add-form input, .add-form select {
+    width: 100%; font-family: inherit; font-size: 13px; padding: 7px 8px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text);
+  }
+  .add-form .field-submit { display: flex; align-items: flex-end; }
+
+  /* table */
+  .list { display: flex; flex-direction: column; }
+  .row {
+    display: grid; grid-template-columns: 26px 1fr 150px 100px 110px 30px;
+    align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border);
+  }
+  .row.head { font-size: 11px; color: var(--text-muted); padding-bottom: 8px; }
+  @media (max-width: 700px) {
+    .row { grid-template-columns: 22px 1fr 30px; }
+    .row .col-detail, .row .col-prio, .row .col-date { display: none; }
+    .row.head { display: none; }
+  }
+  .row:last-of-type { border-bottom: none; }
+  .row.done .col-title { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--border); }
+  .row.overdue { border-left: 3px solid var(--danger); padding-left: 7px; }
+
+  .checkbox { position: relative; display: inline-flex; }
+  .checkbox input { position: absolute; opacity: 0; width: 20px; height: 20px; margin: 0; cursor: pointer; }
+  .checkbox span {
+    width: 19px; height: 19px; border-radius: 5px; border: 1.5px solid var(--border);
+    display: inline-flex; align-items: center; justify-content: center; background: var(--panel);
+  }
+  .checkbox input:checked + span { background: var(--done); border-color: var(--done); }
+  .checkbox input:checked + span::after {
+    content: ""; width: 5px; height: 9px; border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px,-1px);
+  }
+
+  .col-title { font-size: 13.5px; }
+  .col-detail { font-size: 12.5px; color: var(--text-muted); }
+  .col-date { font-size: 11.5px; color: var(--text-muted); font-family: "IBM Plex Mono", monospace; display: flex; align-items: center; gap: 5px; }
+  .col-date.overdue-text { color: var(--danger); font-weight: 600; }
+
+  .badge { display: inline-block; font-size: 11px; font-family: "IBM Plex Mono", monospace; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); }
+  .badge.high { color: var(--danger); background: var(--danger-soft); border-color: transparent; }
+  .badge.med { color: var(--pending); background: var(--pending-soft); border-color: transparent; }
+  .badge.low { color: var(--text-muted); }
+
+  .del-btn { border: none; background: transparent; color: var(--text-muted); padding: 4px; width: 26px; height: 26px; }
+  .del-btn:hover { color: var(--danger); border: none; }
+
+  .empty-state { padding: 30px 6px 34px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+  footer.foot {
+    max-width: 1180px; margin: 30px auto 0; padding: 0 20px;
+    font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  .toast {
+    position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) translateY(12px);
+    background: var(--text); color: var(--bg); font-size: 13px; padding: 9px 16px; border-radius: 7px;
+    opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="title">SAP Basis — Operation Board</div>
+      <div class="subtitle"><span class="dot"></span>Team Activity Monitoring &middot; SAP Basis</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="ghost" id="btnExport" title="Simpan perubahan sebagai file XML">Save XML</button>
+      <button class="ghost" id="btnImport" title="Pilih / muat file XML">Load XML</button>
+      <input type="file" id="fileImport" accept=".xml,text/xml">
+      <button class="icon ghost" id="btnTheme" title="Ganti tema">🌓</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="meta-bar">
+    <div class="today-info">Today: <b id="todayText">—</b></div>
+    <div class="period-filter">
+      <span class="pf-label">Periode:</span>
+      <select id="filterMonth"></select>
+      <select id="filterYear"></select>
+    </div>
+  </div>
+
+  <div class="data-source-note" id="dataSourceNote"><span class="dot-src"></span><span id="dataSourceText"></span></div>
+
+  <div class="donut-grid" id="donutGrid"></div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Total pekerjaan (periode ini)</div>
+      <div class="kpi-value mono" id="kpiTotal">0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Done</div>
+      <div class="kpi-value mono" id="kpiDone">0</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">On Progress</div>
+      <div class="kpi-value mono" id="kpiOpen">0</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Open Problem &amp; Ticket (all periods)</div>
+      <div class="kpi-value mono" id="kpiCritical">0</div>
+    </div>
+  </div>
+
+  <div class="tabbar" id="tabbar"></div>
+
+  <section class="panel-section">
+    <div class="section-head">
+      <div>
+        <h2 id="secTitle">Tugas Harian</h2>
+        <div class="desc" id="secDesc">Daily routine activity SAP Basis</div>
+      </div>
+      <div class="section-head-actions">
+        <input type="text" class="search-box" id="searchBox" placeholder="Cari aktivitas / PIC / priority / date / status...">
+        <button class="primary" id="btnAddToggle">+ Add item</button>
+      </div>
+    </div>
+
+    <form class="add-form" id="addForm">
+      <div>
+        <label for="fTitle">Activity</label>
+        <input type="text" id="fTitle" required placeholder="mis. Cek job SM37">
+      </div>
+      <div>
+        <label for="fDetail" id="fDetailLabel">Detail / PIC</label>
+        <input type="text" id="fDetail" placeholder="mis. nama PIC / sistem">
+      </div>
+      <div>
+        <label for="fPrio">Priority</label>
+        <select id="fPrio">
+          <option value="-">-</option>
+          <option value="Tinggi">High</option>
+          <option value="Sedang">Medium</option>
+          <option value="Rendah">Low</option>
+        </select>
+      </div>
+      <div>
+        <label for="fDate">Date</label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="field-submit">
+        <button type="submit" class="primary" style="width:100%; justify-content:center;">Save</button>
+      </div>
+    </form>
+
+    <div class="row head">
+      <div></div>
+      <div>Activity</div>
+      <div class="col-detail">Detail / PIC</div>
+      <div class="col-prio">Priority</div>
+      <div class="col-date">Date</div>
+      <div></div>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">Tidak ada item pada kategori &amp; periode ini.</div>
+  </section>
+
+  <footer class="foot">
+    <span id="footNote">Data dimuat dari sap-basis-data.xml</span>
+    <span id="lastSaved" class="mono"></span>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DATA_FILE = "sap-basis-data.xml";
+  var STORAGE_KEY = "sapBasisDashboardXML";
+
+  var CATS = [
+    { id: "daily",   label: "Daily Task",  desc: "Aktivitas rutin harian tim SAP Basis", detailLabel: "PIC" },
+    { id: "monthly", label: "Monthly Task", desc: "Aktivitas periodik / bulanan (patching, review, dsb.)", detailLabel: "PIC" },
+    { id: "problem", label: "Problem",       desc: "Daftar problem/incident, ditandai solved atau belum", detailLabel: "Sistem terdampak" },
+    { id: "ticket",  label: "Ticket",         desc: "Tiket permintaan / keluhan dari user", detailLabel: "Requester" }
+  ];
+  var MONTH_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+  var state = { nextId: 1, items: [] };
+  var currentCat = "daily";
+  var searchTerm = "";
+  function localISODate(d) {
+    var dt = d || new Date();
+    var y = dt.getFullYear();
+    var m = String(dt.getMonth() + 1).padStart(2, "0");
+    var day = String(dt.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  var todayISO = localISODate();
+  var xmlFileHandle = null;
+  var dataLoaded = false;
+
+  function uid() { return "itm-" + (state.nextId++); }
+
+  function seed() {
+    state = { nextId: 1, items: [] };
+  }
+
+  /* ---------- XML (de)serialization ---------- */
+  function escXml(s) {
+    return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function toXML() {
+    var lines = [];
+    lines.push('<?xml version="1.0" encoding="UTF-8"?>');
+    lines.push('<sapBasisDashboard nextId="' + state.nextId + '">');
+    lines.push('  <items>');
+    state.items.forEach(function(it){
+      lines.push('    <item id="' + escXml(it.id) + '" category="' + escXml(it.category) + '" done="' + (it.done ? "true" : "false") + '">');
+      lines.push('      <title>' + escXml(it.title) + '</title>');
+      lines.push('      <detail>' + escXml(it.detail) + '</detail>');
+      lines.push('      <priority>' + escXml(it.priority) + '</priority>');
+      lines.push('      <date>' + escXml(it.date) + '</date>');
+      lines.push('    </item>');
+    });
+    lines.push('  </items>');
+    lines.push('</sapBasisDashboard>');
+    return lines.join("\n");
+  }
+  function fromXML(xmlStr) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(xmlStr, "text/xml");
+    var err = doc.querySelector("parsererror");
+    if (err) throw new Error("XML tidak valid");
+    var root = doc.querySelector("sapBasisDashboard");
+    if (!root) throw new Error("Format XML tidak dikenali");
+    var nextId = parseInt(root.getAttribute("nextId"), 10) || 1;
+    var items = [];
+    root.querySelectorAll("items > item").forEach(function(node){
+      var cat = node.getAttribute("category") || "daily";
+      if (["daily","monthly","problem","ticket"].indexOf(cat) === -1) cat = "daily";
+      items.push({
+        id: node.getAttribute("id") || ("itm-" + (nextId++)),
+        category: cat,
+        done: node.getAttribute("done") === "true",
+        title: (node.querySelector("title") && node.querySelector("title").textContent) || "",
+        detail: (node.querySelector("detail") && node.querySelector("detail").textContent) || "",
+        priority: (node.querySelector("priority") && node.querySelector("priority").textContent) || "-",
+        date: (node.querySelector("date") && node.querySelector("date").textContent) || ""
+      });
+    });
+    return { nextId: nextId, items: items };
+  }
+
+  async function writeXMLToHandle() {
+    if (!xmlFileHandle || !window.showOpenFilePicker) return false;
+    try {
+      var permission = await xmlFileHandle.queryPermission({ mode: "readwrite" });
+      if (permission !== "granted") {
+        permission = await xmlFileHandle.requestPermission({ mode: "readwrite" });
+      }
+      if (permission !== "granted") return false;
+      var writable = await xmlFileHandle.createWritable();
+      await writable.write(toXML());
+      await writable.close();
+      document.getElementById("lastSaved").textContent = "XML tersimpan " + new Date().toLocaleTimeString("id-ID");
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function saveCache() {
+    // Browser cache is intentionally not used as the data source.
+    // The XML file remains the canonical data source.
+    document.getElementById("lastSaved").textContent = "perubahan belum disimpan ke XML";
+    writeXMLToHandle().then(function(ok){
+      if (ok) showDataSourceNote("Sumber data: file " + DATA_FILE + " — perubahan terakhir sudah ditulis ke XML.", false);
+    });
+  }
+
+  function showDataSourceNote(text, warn, error) {
+    var note = document.getElementById("dataSourceNote");
+    document.getElementById("dataSourceText").textContent = text;
+    note.classList.add("show");
+    note.classList.toggle("warn", !!warn);
+    note.classList.toggle("error", !!error);
+  }
+
+  function loadXMLText(text, sourceLabel) {
+    state = fromXML(text);
+    dataLoaded = true;
+    document.getElementById("footNote").textContent = "Data dimuat dari " + sourceLabel;
+    showDataSourceNote("Sumber data: " + sourceLabel + " — XML adalah sumber data utama dashboard.", false, false);
+    populateYearSelect();
+    initPeriodDefaults();
+    render();
+  }
+
+  async function pickXMLFile() {
+    if (window.showOpenFilePicker) {
+      try {
+        var handles = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: "SAP Basis XML", accept: { "application/xml": [".xml"], "text/xml": [".xml"] } }],
+          suggestedName: DATA_FILE
+        });
+        xmlFileHandle = handles[0];
+        var file = await xmlFileHandle.getFile();
+        loadXMLText(await file.text(), "file " + file.name);
+        showToast("XML berhasil dimuat");
+        return true;
+      } catch (e) {
+        if (e && e.name === "AbortError") return false;
+      }
+    }
+    document.getElementById("fileImport").click();
+    return false;
+  }
+
+  /* ---------- load sequence: external XML file -> explicit file picker ---------- */
+  function loadData() {
+    return fetch(DATA_FILE, { cache: "no-store" })
+      .then(function(res){ if (!res.ok) throw new Error("not found"); return res.text(); })
+      .then(function(text){
+        loadXMLText(text, "file " + DATA_FILE);
+      })
+      .catch(function(){
+        // Modern browsers intentionally block automatic fetch() of sibling files from file:// pages.
+        document.getElementById("footNote").textContent = "Menunggu file XML dipilih";
+        showDataSourceNote("Browser memblokir pembacaan otomatis file XML saat HTML dibuka langsung dari disk. Klik Load XML dan pilih " + DATA_FILE + ". Setelah dipilih melalui Chrome/Edge, perubahan dapat disimpan kembali ke file XML dengan Save XML.", true, false);
+        document.getElementById("list").innerHTML = "";
+        document.getElementById("emptyState").style.display = "block";
+        document.getElementById("emptyState").textContent = "File XML belum dimuat. Klik Load XML untuk memilih " + DATA_FILE + ".";
+      });
+  }
+
+  /* ---------- period filter ---------- */
+  function populateMonthSelect() {
+    var sel = document.getElementById("filterMonth");
+    sel.innerHTML = "";
+    var optAll = document.createElement("option");
+    optAll.value = "all"; optAll.textContent = "Semua Bulan";
+    sel.appendChild(optAll);
+    MONTH_NAMES.forEach(function(name, idx){
+      var opt = document.createElement("option");
+      opt.value = String(idx + 1);
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+  function populateYearSelect() {
+    var sel = document.getElementById("filterYear");
+    var years = {};
+    state.items.forEach(function(it){ if (it.date) years[it.date.slice(0,4)] = true; });
+    var curYear = new Date().getFullYear();
+    years[String(curYear)] = true;
+    var list = Object.keys(years).sort();
+    sel.innerHTML = "";
+    var optAll = document.createElement("option");
+    optAll.value = "all"; optAll.textContent = "Semua Tahun";
+    sel.appendChild(optAll);
+    list.forEach(function(y){
+      var opt = document.createElement("option");
+      opt.value = y; opt.textContent = y;
+      sel.appendChild(opt);
+    });
+    sel.value = String(curYear);
+  }
+  function initPeriodDefaults() {
+    var now = new Date();
+    document.getElementById("filterMonth").value = String(now.getMonth() + 1);
+    if (document.getElementById("filterYear").value !== String(now.getFullYear())) {
+      document.getElementById("filterYear").value = String(now.getFullYear());
+    }
+  }
+  function getPeriod() {
+    return {
+      month: document.getElementById("filterMonth").value,
+      year: document.getElementById("filterYear").value
+    };
+  }
+  function inPeriod(it, period) {
+    if (!it.date) return period.month === "all" && period.year === "all";
+    var y = it.date.slice(0,4), m = String(parseInt(it.date.slice(5,7), 10));
+    if (period.year !== "all" && y !== period.year) return false;
+    if (period.month !== "all" && m !== period.month) return false;
+    return true;
+  }
+  function periodItems() {
+    var period = getPeriod();
+    return state.items.filter(function(it){ return inPeriod(it, period); });
+  }
+
+  /* ---------- helpers ---------- */
+  function catInfo(id) { return CATS.filter(function(c){ return c.id === id; })[0]; }
+  function statusLabel(cat) {
+    if (cat === "problem") return "Solved";
+    if (cat === "ticket") return "Closed";
+    return "Selesai";
+  }
+  function prioClass(p) { if (p === "Tinggi") return "high"; if (p === "Sedang") return "med"; return "low"; }
+  function isOverdue(it) { return !it.done && it.date && it.date < todayISO; }
+
+  function renderTodayText() {
+    var now = new Date();
+    var text = now.toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    document.getElementById("todayText").textContent = text;
+  }
+
+  function renderTabs() {
+    var bar = document.getElementById("tabbar");
+    bar.innerHTML = "";
+    var items = periodItems();
+    CATS.forEach(function(c){
+      var count = items.filter(function(it){ return it.category === c.id; }).length;
+      var btn = document.createElement("button");
+      btn.className = c.id === currentCat ? "active" : "";
+      btn.innerHTML = c.label + ' <span class="count">' + count + '</span>';
+      btn.addEventListener("click", function(){ currentCat = c.id; render(); });
+      bar.appendChild(btn);
+    });
+  }
+
+  function renderSectionHead() {
+    var c = catInfo(currentCat);
+    document.getElementById("secTitle").textContent = c.label;
+    document.getElementById("secDesc").textContent = c.desc;
+    document.getElementById("fDetailLabel").textContent = "Detail (" + c.detailLabel + ")";
+  }
+
+  function renderList() {
+    var listEl = document.getElementById("list");
+    var emptyEl = document.getElementById("emptyState");
+    listEl.innerHTML = "";
+    var items = periodItems().filter(function(it){ return it.category === currentCat; });
+    if (searchTerm) {
+      var q = searchTerm.toLowerCase();
+      items = items.filter(function(it){
+        var haystack = [it.title, it.detail, it.priority, it.date, it.category, it.done ? "done selesai closed solved" : "open progress belum selesai"].join(" ").toLowerCase();
+        return haystack.indexOf(q) !== -1;
+      });
+    }
+    var priorityRank = { "Tinggi": 0, "Sedang": 1, "Rendah": 2, "-": 3 };
+    items.sort(function(a,b){
+      var ao = isOverdue(a) ? 0 : 1, bo = isOverdue(b) ? 0 : 1;
+      if (ao !== bo) return ao - bo;
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var ap = priorityRank[a.priority] == null ? 3 : priorityRank[a.priority];
+      var bp = priorityRank[b.priority] == null ? 3 : priorityRank[b.priority];
+      if (ap !== bp) return ap - bp;
+      return (a.date || "9999-12-31").localeCompare(b.date || "9999-12-31");
+    });
+    if (items.length === 0) { emptyEl.style.display = "block"; return; }
+    emptyEl.style.display = "none";
+
+    items.forEach(function(it){
+      var overdue = isOverdue(it);
+      var row = document.createElement("div");
+      row.className = "row" + (it.done ? " done" : "") + (overdue ? " overdue" : "");
+
+      var chkWrap = document.createElement("label");
+      chkWrap.className = "checkbox";
+      var chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = it.done;
+      chk.setAttribute("aria-label", statusLabel(it.category) + ": " + it.title);
+      chk.addEventListener("change", function(){
+        it.done = chk.checked;
+        saveCache();
+        renderAll();
+      });
+      var chkSpan = document.createElement("span");
+      chkWrap.appendChild(chk); chkWrap.appendChild(chkSpan);
+
+      var titleEl = document.createElement("div");
+      titleEl.className = "col-title";
+      titleEl.textContent = it.title;
+
+      var detailEl = document.createElement("div");
+      detailEl.className = "col-detail";
+      detailEl.textContent = it.detail || "—";
+
+      var prioEl = document.createElement("div");
+      prioEl.className = "col-prio";
+      if (it.priority && it.priority !== "-") {
+        var badge = document.createElement("span");
+        badge.className = "badge " + prioClass(it.priority);
+        badge.textContent = it.priority;
+        prioEl.appendChild(badge);
+      } else { prioEl.textContent = "—"; }
+
+      var dateEl = document.createElement("div");
+      dateEl.className = "col-date" + (overdue ? " overdue-text" : "");
+      dateEl.textContent = (overdue ? "⚠ " : "") + (it.date || "—");
+      if (overdue) dateEl.title = "Melewati tanggal target dan belum selesai";
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.title = "Hapus";
+      delBtn.innerHTML = "✕";
+      delBtn.addEventListener("click", function(){
+        state.items = state.items.filter(function(x){ return x.id !== it.id; });
+        saveCache();
+        renderAll();
+        showToast("Item dihapus");
+      });
+
+      row.appendChild(chkWrap);
+      row.appendChild(titleEl);
+      row.appendChild(detailEl);
+      row.appendChild(prioEl);
+      row.appendChild(dateEl);
+      row.appendChild(delBtn);
+      listEl.appendChild(row);
+    });
+  }
+
+  function computeStats() {
+    var items = periodItems();
+    var total = items.length;
+    var done = items.filter(function(it){ return it.done; }).length;
+    var perCat = CATS.map(function(c){
+      var catItems = items.filter(function(it){ return it.category === c.id; });
+      var d = catItems.filter(function(it){ return it.done; }).length;
+      return { id: c.id, label: c.label, total: catItems.length, done: d, pct: catItems.length ? Math.round(d/catItems.length*100) : 0 };
+    });
+    var openProblemTicketAll = state.items.filter(function(it){ return !it.done && (it.category === "problem" || it.category === "ticket"); }).length;
+    return { total: total, done: done, open: total - done, pct: total ? Math.round(done/total*100) : 0, perCat: perCat, openProblemTicketAll: openProblemTicketAll };
+  }
+
+  function donutSVG(pct, size, strokeW, color, textSize) {
+    var r = (size - strokeW) / 2, c = size / 2;
+    var circumference = 2 * Math.PI * r;
+    var offset = circumference * (1 - pct/100);
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<circle cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="var(--panel-alt)" stroke-width="' + strokeW + '"></circle>' +
+      '<circle cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + strokeW + '" ' +
+        'stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" ' +
+        'transform="rotate(-90 ' + c + ' ' + c + ')" style="transition: stroke-dashoffset .4s ease;"></circle>' +
+      '<text x="' + c + '" y="' + (c + textSize*0.34) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + textSize + '" font-weight="600" fill="var(--text)">' + pct + '%</text>' +
+      '</svg>';
+  }
+
+  function renderDonuts(stats) {
+    var grid = document.getElementById("donutGrid");
+    grid.innerHTML = "";
+
+    var totalCard = document.createElement("div");
+    totalCard.className = "donut-card total";
+    totalCard.innerHTML = donutSVG(stats.pct, 116, 12, "var(--total-accent)", 22) +
+      '<div class="dc-label">Total</div>' +
+      '<div class="dc-count">' + stats.done + ' / ' + stats.total + '</div>';
+    grid.appendChild(totalCard);
+
+    stats.perCat.forEach(function(c){
+      var card = document.createElement("div");
+      card.className = "donut-card";
+      card.innerHTML = donutSVG(c.pct, 100, 10, "var(--accent)", 18) +
+        '<div class="dc-label">' + c.label + '</div>' +
+        '<div class="dc-count">' + c.done + ' / ' + c.total + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  function renderOverview() {
+    var s = computeStats();
+    document.getElementById("kpiTotal").textContent = s.total;
+    document.getElementById("kpiDone").textContent = s.done;
+    document.getElementById("kpiOpen").textContent = s.open;
+    document.getElementById("kpiCritical").textContent = s.openProblemTicketAll;
+    renderDonuts(s);
+  }
+
+  function renderAll() {
+    renderTabs();
+    renderSectionHead();
+    renderList();
+    renderOverview();
+  }
+  function render() {
+    renderAll();
+    document.getElementById("addForm").classList.remove("open");
+  }
+
+  /* ---------- add form ---------- */
+  document.getElementById("btnAddToggle").addEventListener("click", function(){
+    document.getElementById("addForm").classList.toggle("open");
+    if (document.getElementById("addForm").classList.contains("open")) {
+      var period = getPeriod();
+      var now = new Date();
+      var defaultDate = todayISO;
+      if (period.year !== "all" && period.month !== "all") {
+        var y = period.year, m = ("0" + period.month).slice(-2);
+        if (!(y === String(now.getFullYear()) && parseInt(period.month,10) === now.getMonth()+1)) {
+          defaultDate = y + "-" + m + "-01";
+        }
+      }
+      document.getElementById("fDate").value = defaultDate;
+      document.getElementById("fTitle").focus();
+    }
+  });
+
+  document.getElementById("addForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var title = document.getElementById("fTitle").value.trim();
+    if (!title) return;
+    var detail = document.getElementById("fDetail").value.trim();
+    var prio = document.getElementById("fPrio").value;
+    var date = document.getElementById("fDate").value || todayISO;
+    state.items.push({ id: uid(), category: currentCat, title: title, detail: detail, priority: prio, date: date, done: false });
+    saveCache();
+    document.getElementById("fTitle").value = "";
+    document.getElementById("fDetail").value = "";
+    document.getElementById("fPrio").value = "-";
+    document.getElementById("fDate").value = "";
+    populateYearSelect_keepSelection();
+    render();
+    showToast("Item ditambahkan");
+  });
+
+  function populateYearSelect_keepSelection() {
+    var cur = document.getElementById("filterYear").value;
+    populateYearSelect();
+    var sel = document.getElementById("filterYear");
+    if ([].slice.call(sel.options).some(function(o){ return o.value === cur; })) sel.value = cur;
+  }
+
+  /* ---------- search ---------- */
+  document.getElementById("searchBox").addEventListener("input", function(e){
+    searchTerm = e.target.value;
+    renderList();
+  });
+
+  /* ---------- period filter events ---------- */
+  document.getElementById("filterMonth").addEventListener("change", renderAll);
+  document.getElementById("filterYear").addEventListener("change", renderAll);
+
+  /* ---------- export / import ---------- */
+  document.getElementById("btnExport").addEventListener("click", async function(){
+    if (xmlFileHandle) {
+      var saved = await writeXMLToHandle();
+      if (saved) { showToast("Perubahan tersimpan ke " + DATA_FILE); return; }
+    }
+    var xml = toXML();
+    var blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = DATA_FILE;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    document.getElementById("lastSaved").textContent = "XML diexport " + new Date().toLocaleTimeString("id-ID");
+    showToast("XML diexport — ganti file " + DATA_FILE + " yang lama");
+  });
+
+  document.getElementById("btnImport").addEventListener("click", function(){
+    pickXMLFile();
+  });
+  document.getElementById("fileImport").addEventListener("change", function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        state = fromXML(ev.target.result);
+        populateYearSelect_keepSelection();
+        document.getElementById("footNote").textContent = "Data dimuat dari file yang dipilih (" + file.name + ")";
+        showDataSourceNote("Data saat ini berasal dari file yang dipilih: " + file.name + ". Save XML akan mengunduh salinan terbaru karena browser tidak memberikan akses tulis ke file input.", true, false);
+        document.getElementById("lastSaved").textContent = "perubahan belum disimpan ke XML";
+        render();
+        showToast("Data berhasil diimport");
+      } catch (err) { showToast("Gagal import: file XML tidak valid"); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  /* ---------- theme ---------- */
+  function initTheme() {
+    var saved = null;
+    try { saved = window.localStorage.getItem("sapBasisTheme"); } catch(e) {}
+    if (saved === "dark" || saved === "light") document.documentElement.setAttribute("data-theme", saved);
+  }
+  document.getElementById("btnTheme").addEventListener("click", function(){
+    var current = document.documentElement.getAttribute("data-theme");
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var effectiveDark = current === "dark" || (!current && prefersDark);
+    var next = effectiveDark ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { window.localStorage.setItem("sapBasisTheme", next); } catch(e) {}
+    renderOverview();
+  });
+
+  /* ---------- toast ---------- */
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+  }
+
+  /* ---------- init ---------- */
+  initTheme();
+  renderTodayText();
+  populateMonthSelect();
+  loadData().then(function(){
+    populateYearSelect();
+    initPeriodDefaults();
+    render();
+  });
+
+})();
+</script>
+</body>
+</html>

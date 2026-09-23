@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sapBasisDashboard nextId="33">
+  <items>
+    <item id="itm-18" category="daily" done="true">
+      <title>Daily Health Check 01/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-01</date>
+    </item>
+    <item id="itm-19" category="daily" done="true">
+      <title>Daily Health Check 02/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-02</date>
+    </item>
+    <item id="itm-20" category="daily" done="true">
+      <title>Daily Health Check 03/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-03</date>
+    </item>
+    <item id="itm-21" category="monthly" done="true">
+      <title>EWA Report Summary August 2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-21</date>
+    </item>
+    <item id="itm-22" category="monthly" done="false">
+      <title>Data Cleansing Assist</title>
+      <detail></detail>
+      <priority>Sedang</priority>
+      <date>2026-09-30</date>
+    </item>
+    <item id="itm-23" category="monthly" done="false">
+      <title>Data Cleansing HCM</title>
+      <detail></detail>
+      <priority>Sedang</priority>
+      <date>2026-09-30</date>
+    </item>
+    <item id="itm-24" category="monthly" done="true">
+      <title>Data Cleansing Content Server</title>
+      <detail></detail>
+      <priority>Sedang</priority>
+      <date>2026-09-30</date>
+    </item>
+    <item id="itm-25" category="daily" done="true">
+      <title>Daily Health Check 04/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-04</date>
+    </item>
+    <item id="itm-26" category="daily" done="true">
+      <title>Daily Health Check 07/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-07</date>
+    </item>
+    <item id="itm-27" category="daily" done="true">
+      <title>Daily Health Check 08/09/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-09-08</date>
+    </item>
+    <item id="itm-28" category="daily" done="false">
+      <title>Daily Health Check 01/10/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-10-01</date>
+    </item>
+    <item id="itm-29" category="daily" done="false">
+      <title>Daily Health Check 02/10/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-10-02</date>
+    </item>
+    <item id="itm-30" category="daily" done="false">
+      <title>Daily Health Check 05/10/2026</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2026-10-05</date>
+    </item>
+    <item id="itm-31" category="monthly" done="false">
+      <title>EWA Report Summary September 2026</title>
+      <detail></detail>
+      <priority>Sedang</priority>
+      <date>2026-10-07</date>
+    </item>
+    <item id="itm-32" category="daily" done="false">
+      <title>Daily Health Check 07/01/2027</title>
+      <detail></detail>
+      <priority>Rendah</priority>
+      <date>2027-01-07</date>
+    </item>
+  </items>
+</sapBasisDashboard>
